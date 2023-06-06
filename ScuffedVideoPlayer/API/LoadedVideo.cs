@@ -58,12 +58,13 @@
                 throw new VideoLoadingException("No frames for second 0");
             }
             int count = firstFrames.Count;
-            for (var index = 1; index < secondToFrame.Count; index++)
+            for (var index = 1; index < secondToFrame.Count-1; index++)
             {
-                var kvp = secondToFrame.ElementAt(index);
-                if (kvp.Value.Count != count && index != secondToFrame.Count - 1)
+                var value = secondToFrame[index];
+                if (value.Count != count && index != secondToFrame.Count - 1)
                 {
-                    throw new VideoLoadingException("Invalid frame count");
+                    Log.Debug($"index {index}, count-1 {secondToFrame.Count - 1}");
+                    throw new VideoLoadingException($"Invalid frame count (second {index})");
                 }
             }
             FramesPerSecond = count;
