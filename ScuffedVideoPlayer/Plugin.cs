@@ -1,97 +1,106 @@
 ﻿namespace ScuffedVideoPlayer
 {
-    using System;
     using System.Collections.Generic;
-    using System.Drawing;
     using System.IO;
-    using System.Text;
+    using System.Linq;
+    using HarmonyLib;
     using MEC;
-    using PlayerRoles;
-    using PlayerRoles.Voice;
     using PluginAPI.Core;
     using PluginAPI.Core.Attributes;
-    using PluginAPI.Events;
     using PluginAPI.Helpers;
-    using SCPSLAudioApi.AudioCore;
-    using UnityEngine;
-    using VoiceChat;
-    using Color = System.Drawing.Color;
+    using ScuffedVideoPlayer.API;
+    using ScuffedVideoPlayer.Audio;
+    using ScuffedVideoPlayer.Output;
+    using ScuffedVideoPlayer.Playback;
 
     public class Plugin
     {
+        public static readonly Dictionary<string, LoadedVideo> Videos = new Dictionary<string, LoadedVideo>();
+        public static string PluginFolder = Path.Combine(Paths.LocalPlugins.Plugins, "ScuffedVideoPlayer");
+
+        public static IEnumerator<float> PlaybackCoroutine(IDisplay display, LoadedVideo video, AudioNpc? audioNpc, bool destroyNpcOnFinish = true)
+        {
+            yield return Timing.WaitForSeconds(1f); // wait for audio
+            var frames = video.Frames; // load video so fps is not 0
+            float delay = 1.0f / video.FramesPerSecond;
+            if (display.Paused)
+                yield return Timing.WaitUntilFalse(() => display.Paused);
+            if (audioNpc != null && video.AudioFile != null)
+            {
+                audioNpc.Play(video.AudioFile);
+            }
+            else
+            {
+                audioNpc = null;
+                Log.Warning($"Playing track {Videos.FirstOrDefault(x => x.Value == video).Key ?? "null"} without audio");
+            }
+            if (display is ITextDisplay textDisplay)
+            {
+                foreach (var frame in frames)
+                {
+                    if (display.Paused)
+                    {
+                        if (audioNpc == null)
+                        {
+                            yield return Timing.WaitUntilFalse(() => textDisplay.Paused);
+                        }
+                        else
+                        {
+                            audioNpc.IsPaused = true;
+                            yield return Timing.WaitUntilFalse(() => textDisplay.Paused);
+                            audioNpc.IsPaused = false;
+                        }
+                    }
+                    var text = TextPlayback.ImageToText(frame);
+                    textDisplay.SetText(text);
+                    yield return Timing.WaitForSeconds(delay);
+                }
+                textDisplay.Clear();
+            }
+
+            if (audioNpc is { IsPlaying: true })
+                yield return Timing.WaitUntilFalse(() => audioNpc.IsPlaying);
+            audioNpc?.Destroy();
+        }
+
         [PluginConfig]
         public Config Config;
+
+        private Harmony? _harmony;
 
         [PluginEntryPoint("ScuffedVideoPlayer", "1.0.0", "scuffed video player", "moddedmcplayer")]
         private void OnEnabled()
         {
-            if (!Directory.Exists(folder))
-                Directory.CreateDirectory(folder);
+            _harmony = new Harmony("moddedmcplayer.scuffedvideoplayer");
+            _harmony.PatchAll();
             SCPSLAudioApi.Startup.SetupDependencies();
-            var frames = Path.Combine(folder, "frames");
-            var fileNames = Directory.GetFiles(frames);
-            framesArray = new Bitmap[fileNames.Length];
-            for (var i = 0; i < fileNames.Length; i++)
+            if (!Directory.Exists(Config.VideoFolder))
+                Directory.CreateDirectory(Config.VideoFolder);
+            foreach (var zip in Directory.GetFiles(Config.VideoFolder, "*.zip", SearchOption.TopDirectoryOnly))
             {
-                var img = fileNames[i];
-                using var stream = File.OpenRead(img);
+                VideoExtractor.ExtractFiles(zip, Path.Combine(Config.VideoFolder, Path.GetFileNameWithoutExtension(zip)));
+                File.Delete(zip);
+            }
+
+            foreach (var videoDir in Directory.GetDirectories(Config.VideoFolder))
+            {
+                var dirName = videoDir.Split(Path.DirectorySeparatorChar).Last();
                 try
                 {
-                    framesArray[i] = new Bitmap(Image.FromStream(stream));
+                    Videos.Add(dirName, new LoadedVideo(videoDir));
                 }
-                catch (Exception e)
+                catch (VideoLoadingException e)
                 {
-                    Log.Info($"image conversion error of type: {e.GetType()}");
-                    // ignored
-                } // Win32 error
-            }
-        }
-        static Bitmap[] framesArray;
-        static string folder = Path.Combine(Paths.LocalPlugins.Plugins, "scuffedvideoplayer");
-        static string audioFile = Path.Combine(folder, "audio.ogg");
-
-        public static CoroutineHandle PlayCoroutineHandle;
-        public static IEnumerator<float> PlayCoroutine()
-        {
-            var host = Player.Get(ReferenceHub.HostHub);
-            var hostaudio = AudioPlayerBase.Get(host.ReferenceHub);
-            host.SetRole(RoleTypeId.Tutorial);
-            host.IsGodModeEnabled = true;
-            host.IsNoclipEnabled = true;
-            host.Position = IntercomDisplay._singleton.transform.position - Vector3.up * 2;
-            hostaudio.Stoptrack(true);
-            hostaudio.BroadcastChannel = VoiceChatChannel.Proximity;
-            hostaudio.Volume = 100f;
-            hostaudio.Enqueue(audioFile, 0);
-            hostaudio.Play(0);
-            
-
-            foreach (var frame in framesArray)
-            {
-                var text = ImageToText(frame);
-                IntercomDisplay.TrySetDisplay(text);
-
-                yield return Timing.WaitForSeconds(0.1f);
-            }
-            IntercomDisplay.TrySetDisplay(null);
-        }
-
-        public static string ImageToText(Bitmap bitmap)
-        {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < bitmap.Height; i++)
-            {
-                sb.Append("<size=33%><line-height=75%>");
-                for (int y = 0; y < bitmap.Width; y++)
-                {
-                    var pixel = bitmap.GetPixel(y, i);
-                    sb.Append($"<color={ToHex(pixel)}>█</color>");
+                    Log.Error($"Video is invalid: {dirName}, reason: {e.Message}");
                 }
-                sb.Append("\n");
             }
-            return sb.ToString();
         }
 
-        static string ToHex(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+        [PluginUnload]
+        private void OnDisabled()
+        {
+            _harmony?.UnpatchAll(_harmony.Id);
+            _harmony = null;
+        }
     }
 }

@@ -1,7 +1,9 @@
 ﻿namespace ScuffedVideoPlayer
 {
+    using System.IO;
+
     public class Config
     {
-        public string yes { get; set; } = "yes";
+        public string VideoFolder { get; set; } = Path.Combine(Plugin.PluginFolder, "videos");
     }
 }
