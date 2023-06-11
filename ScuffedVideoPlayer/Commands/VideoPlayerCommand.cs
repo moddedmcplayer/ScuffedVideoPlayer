@@ -4,6 +4,8 @@
     using System.Text;
     using CommandSystem;
     using NorthwoodLib.Pools;
+    using ScuffedVideoPlayer.Commands.Displays;
+    using ScuffedVideoPlayer.Commands.Playback;
 
     [CommandHandler(typeof(RemoteAdminCommandHandler))]
     [CommandHandler(typeof(GameConsoleCommandHandler))]
@@ -18,6 +20,13 @@
         {
             RegisterCommand(new PlayCommand());
             RegisterCommand(new ListCommand());
+            RegisterCommand(new StopCommand());
+            RegisterCommand(new PauseCommand());
+            RegisterCommand(new SelectCommand());
+            RegisterCommand(new StopAllCommand());
+            RegisterCommand(new VolumeCommand());
+
+            RegisterCommand(DisplayCommand.Create());
         }
 
         protected override bool ExecuteParent(ArraySegment<string> arguments, ICommandSender sender, out string response)

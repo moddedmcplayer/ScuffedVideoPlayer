@@ -1,13 +1,12 @@
 ﻿namespace ScuffedVideoPlayer.Audio
 {
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using MEC;
     using Mirror;
     using PlayerRoles;
     using PlayerRoles.FirstPersonControl;
-    using PlayerStatsSystem;
-    using PluginAPI.Core;
     using SCPSLAudioApi.AudioCore;
     using UnityEngine;
     using VoiceChat;
@@ -22,8 +21,8 @@
 
         public bool IsPaused
         {
-            get => AudioPlayerBase.ShouldPlay;
-            set => AudioPlayerBase.ShouldPlay = value;
+            get => !AudioPlayerBase.ShouldPlay;
+            set => AudioPlayerBase.ShouldPlay = !value;
         }
 
         public void SetPosition(Vector3 position)
@@ -34,6 +33,7 @@
         public void Play(string file, VoiceChatChannel channel = VoiceChatChannel.Proximity, float volume = 100f)
         {
             Stop();
+            Hub.nicknameSync.MyNick = Path.GetFileNameWithoutExtension(file);
             AudioPlayerBase.Volume = volume;
             AudioPlayerBase.BroadcastChannel = channel;
             AudioPlayerBase.Enqueue(file, 0);
@@ -59,6 +59,7 @@
             _npcs.Add(hub);
             Timing.CallDelayed(0.7f, () =>
             {
+                hub.nicknameSync.MyNick = "No track selected";
                 hub.roleManager.ServerSetRole(RoleTypeId.Tutorial, RoleChangeReason.None, RoleSpawnFlags.None);
                 hub.characterClassManager.GodMode = true;
                 hub.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);

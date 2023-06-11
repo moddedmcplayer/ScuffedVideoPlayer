@@ -5,9 +5,9 @@
     using System.Text;
     using ScuffedVideoPlayer.API;
 
-    public class TextPlayback : IPlayback<string>
+    public class TextPlayback
     {
-        public IEnumerator<string> Play(LoadedVideo video)
+        public static IEnumerator<string> Play(LoadedVideo video)
         {
             foreach (var frame in video.Frames)
             {

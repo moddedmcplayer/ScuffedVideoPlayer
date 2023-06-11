@@ -8,6 +8,7 @@
         public bool Paused { get; set; } = false;
         public Vector3 Position { get; } = PlayerRoles.Voice.IntercomDisplay._singleton.transform.position;
         public PlaybackHandle? PlaybackHandle { get; set; }
+        public int Id { get; } = 0;
 
         public void SetText(string text)
         {
@@ -17,6 +18,13 @@
         public void Clear()
         {
             PlayerRoles.Voice.IntercomDisplay.TrySetDisplay(null);
+            PlaybackHandle?.AudioNpc?.Destroy();
+        }
+
+        public void Dispose()
+        {
+            Clear();
+            PlaybackHandle?.Dispose();
         }
     }
 }

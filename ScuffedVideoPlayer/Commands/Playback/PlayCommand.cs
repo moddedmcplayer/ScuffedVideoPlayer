@@ -1,4 +1,4 @@
-﻿namespace ScuffedVideoPlayer.Commands
+﻿namespace ScuffedVideoPlayer.Commands.Playback
 {
     using System;
     using System.Linq;
@@ -10,16 +10,22 @@
     using ScuffedVideoPlayer.Audio;
     using ScuffedVideoPlayer.Output;
     using ScuffedVideoPlayer.Output.Displays;
+    using UnityEngine;
     using Plugin = ScuffedVideoPlayer.Plugin;
 
     public class PlayCommand : ICommand
     {
-        private static CoroutineHandle handle;
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
         {
             if (!sender.CheckPermission("videoplayer.play"))
             {
                 response = "You do not have permission to use this command (videoplayer.play).";
+                return false;
+            }
+
+            if (!SelectCommand.SelectedDisplays.TryGetValue(Player.Get(sender).UserId, out var display) || display == null)
+            {
+                response = "You must select a display first (vp select <id>).";
                 return false;
             }
 
@@ -30,7 +36,7 @@
             }
 
             var videoNameOrId = arguments.At(0);
-            LoadedVideo videoResult = null!;
+            LoadedVideo videoResult;
             if (int.TryParse(videoNameOrId, out var id))
             {
                 if (id < 1 || id > Plugin.Videos.Count)
@@ -62,21 +68,44 @@
                     videoNameOrId = videoNameOrId.Substring(0, videoNameOrId.Length - 1);
                 }
 
-                if (!Plugin.Videos.TryGetValue(videoNameOrId, out var video))
+                if (!Plugin.Videos.TryGetValue(videoNameOrId, out videoResult))
                 {
                     response = $"Video with name \"{videoNameOrId}\" not found.";
                     return false;
                 }
             }
-            if (IntercomDisplay.Instance.PlaybackHandle?.IsPlaying ?? false)
+
+            if (display.PlaybackHandle?.IsPlaying ?? false)
             {
-                response = "The intercom is already playing a video.";
+                response = "The display is already playing a video.";
                 return false;
             }
-            var audioNpc = AudioNpc.Create(IntercomDisplay.Instance.Position);
-            IntercomDisplay.Instance.PlaybackHandle = new PlaybackHandle(
-                Timing.RunCoroutine(Plugin.PlaybackCoroutine(IntercomDisplay.Instance, videoResult, audioNpc))
-                , audioNpc);
+
+            if (display is PrimitiveDisplay primitiveDisplay)
+            {
+                var firstFrame = videoResult.Frames.First();
+                if (firstFrame.Width != primitiveDisplay.Resolution.Item1 || firstFrame.Height != primitiveDisplay.Resolution.Item2)
+                {
+                    response = $"Resolution mismatch! ({firstFrame.Width}x{firstFrame.Height} vs {primitiveDisplay.Resolution.Item1}x{primitiveDisplay.Resolution.Item2})";
+                    return false;
+                }
+            }
+
+            AudioNpc audioNpc;
+            if (display is not PlayerDisplay playerDisplay)
+            {
+                audioNpc = AudioNpc.Create(display.Position);
+                    display.PlaybackHandle = new PlaybackHandle(
+                        Timing.RunCoroutine(PlaybackCoroutines.StandardPlaybackCoroutine(display, videoResult, audioNpc))
+                        , audioNpc);
+            }
+            else
+            {
+                audioNpc = AudioNpc.Create(Vector3.zero);
+                    display.PlaybackHandle = new PlaybackHandle(
+                        Timing.RunCoroutine(PlaybackCoroutines.PlayerPlaybackCoroutine(playerDisplay, videoResult, audioNpc))
+                        , audioNpc);
+            }
 
             response = "Done.";
             return true;
@@ -84,6 +113,6 @@
 
         public string Command { get; } = "play";
         public string[] Aliases { get; } = { "p" };
-        public string Description { get; } = "Plays a video on the intercom.";
+        public string Description { get; } = "Plays a video.";
     }
 }

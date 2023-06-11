@@ -3,6 +3,5 @@
     public interface ITextDisplay : IDisplay
     {
         void SetText(string text);
-        void Clear();
     }
 }

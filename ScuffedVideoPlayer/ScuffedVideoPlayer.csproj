@@ -136,6 +136,9 @@
         <Reference Include="UnityEngine.PhysicsModule">
           <HintPath>..\..\..\..\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
         </Reference>
+        <Reference Include="UnityEngine.VideoModule">
+          <HintPath>..\..\..\..\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed\UnityEngine.VideoModule.dll</HintPath>
+        </Reference>
         <Reference Include="YamlDotNet, Version=11.0.0.0, Culture=neutral, PublicKeyToken=ec19458f3c15af5e, processorArchitecture=MSIL">
           <HintPath>..\packages\YamlDotNet.11.0.1\lib\net45\YamlDotNet.dll</HintPath>
         </Reference>
@@ -146,11 +149,25 @@
         <Compile Include="API\VideoLoadingException.cs" />
         <Compile Include="Audio\AudioNpc.cs" />
         <Compile Include="Audio\FakeConnection.cs" />
+        <Compile Include="Commands\Displays\BringCommand.cs" />
+        <Compile Include="Commands\Displays\Creation\CreateCommand.cs" />
+        <Compile Include="Commands\Displays\Creation\CreatePlayerCommand.cs" />
+        <Compile Include="Commands\Displays\Creation\CreatePrimitiveCommand.cs" />
+        <Compile Include="Commands\Displays\DestroyCommand.cs" />
+        <Compile Include="Commands\Displays\DisplayCommand.cs" />
         <Compile Include="Commands\ListCommand.cs" />
-        <Compile Include="Commands\PlayCommand.cs" />
+        <Compile Include="Commands\Playback\ClearCommand.cs" />
+        <Compile Include="Commands\Playback\PauseCommand.cs" />
+        <Compile Include="Commands\Playback\PlayCommand.cs" />
+        <Compile Include="Commands\Playback\SelectCommand.cs" />
+        <Compile Include="Commands\Playback\StopAllCommand.cs" />
+        <Compile Include="Commands\Playback\StopCommand.cs" />
+        <Compile Include="Commands\Playback\VolumeCommand.cs" />
         <Compile Include="Commands\VideoPlayerCommand.cs" />
         <Compile Include="Config.cs" />
         <Compile Include="Output\Displays\IntercomDisplay.cs" />
+        <Compile Include="Output\Displays\PlayerDisplay.cs" />
+        <Compile Include="Output\Displays\PrimitiveDisplay.cs" />
         <Compile Include="Output\IDisplay.cs" />
         <Compile Include="Output\ITextDisplay.cs" />
         <Compile Include="Output\PlaybackHandle.cs" />
@@ -158,7 +175,8 @@
         <Compile Include="Patches\FpcRotationPatch.cs" />
         <Compile Include="Patches\InstanceModeSetterPatch.cs" />
         <Compile Include="Patches\UpdateFloating.cs" />
-        <Compile Include="Playback\IPlayback.cs" />
+        <Compile Include="PlaybackCoroutines.cs" />
+        <Compile Include="Playback\PrimitivePlayback.cs" />
         <Compile Include="Playback\TextPlayback.cs" />
         <Compile Include="Plugin.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />

@@ -3,76 +3,58 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using AdminToys;
     using HarmonyLib;
     using MEC;
+    using Mirror;
     using PluginAPI.Core;
     using PluginAPI.Core.Attributes;
+    using PluginAPI.Enums;
+    using PluginAPI.Events;
     using PluginAPI.Helpers;
     using ScuffedVideoPlayer.API;
     using ScuffedVideoPlayer.Audio;
+    using ScuffedVideoPlayer.Commands;
+    using ScuffedVideoPlayer.Commands.Playback;
     using ScuffedVideoPlayer.Output;
+    using ScuffedVideoPlayer.Output.Displays;
     using ScuffedVideoPlayer.Playback;
+    using UnityEngine;
+    using VoiceChat;
 
     public class Plugin
     {
         public static readonly Dictionary<string, LoadedVideo> Videos = new Dictionary<string, LoadedVideo>();
         public static string PluginFolder = Path.Combine(Paths.LocalPlugins.Plugins, "ScuffedVideoPlayer");
-
-        public static IEnumerator<float> PlaybackCoroutine(IDisplay display, LoadedVideo video, AudioNpc? audioNpc, bool destroyNpcOnFinish = true)
+        public static Dictionary<int, IDisplay> Displays = new Dictionary<int, IDisplay>();
+        internal static Queue<int> FreeDisplayIds = new Queue<int>();
+        public static int GetDisplayId()
         {
-            yield return Timing.WaitForSeconds(1f); // wait for audio
-            var frames = video.Frames; // load video so fps is not 0
-            float delay = 1.0f / video.FramesPerSecond;
-            if (display.Paused)
-                yield return Timing.WaitUntilFalse(() => display.Paused);
-            if (audioNpc != null && video.AudioFile != null)
+            if (FreeDisplayIds.Count > 0)
+                return FreeDisplayIds.Dequeue();
+            for (int i = 0; i < 10000; i++)
             {
-                audioNpc.Play(video.AudioFile);
-            }
-            else
-            {
-                audioNpc = null;
-                Log.Warning($"Playing track {Videos.FirstOrDefault(x => x.Value == video).Key ?? "null"} without audio");
-            }
-            if (display is ITextDisplay textDisplay)
-            {
-                foreach (var frame in frames)
+                if (!Displays.ContainsKey(i))
                 {
-                    if (display.Paused)
-                    {
-                        if (audioNpc == null)
-                        {
-                            yield return Timing.WaitUntilFalse(() => textDisplay.Paused);
-                        }
-                        else
-                        {
-                            audioNpc.IsPaused = true;
-                            yield return Timing.WaitUntilFalse(() => textDisplay.Paused);
-                            audioNpc.IsPaused = false;
-                        }
-                    }
-                    var text = TextPlayback.ImageToText(frame);
-                    textDisplay.SetText(text);
-                    yield return Timing.WaitForSeconds(delay);
+                    return i;
                 }
-                textDisplay.Clear();
             }
-
-            if (audioNpc is { IsPlaying: true })
-                yield return Timing.WaitUntilFalse(() => audioNpc.IsPlaying);
-            audioNpc?.Destroy();
+            return -1;
         }
 
         [PluginConfig]
         public Config Config;
 
+        public static Plugin? Instance { get; private set; }
         private Harmony? _harmony;
 
-        [PluginEntryPoint("ScuffedVideoPlayer", "1.0.0", "scuffed video player", "moddedmcplayer")]
+        [PluginEntryPoint("ScuffedVideoPlayer", "1.0.1", "scuffed video player", "moddedmcplayer")]
         private void OnEnabled()
         {
+            Instance = this;
             _harmony = new Harmony("moddedmcplayer.scuffedvideoplayer");
             _harmony.PatchAll();
+            EventManager.RegisterEvents(this);
             SCPSLAudioApi.Startup.SetupDependencies();
             if (!Directory.Exists(Config.VideoFolder))
                 Directory.CreateDirectory(Config.VideoFolder);
@@ -99,8 +81,27 @@
         [PluginUnload]
         private void OnDisabled()
         {
+            EventManager.UnregisterEvents(this);
             _harmony?.UnpatchAll(_harmony.Id);
             _harmony = null;
+            Instance = null;
+        }
+
+        [PluginEvent(ServerEventType.WaitingForPlayers)]
+        public void OnWaitingForPlayers()
+        {
+            Displays.Clear();
+            PrimitiveDisplay.Instances.Clear();
+            SelectCommand.SelectedDisplays.Clear();
+            Displays.Add(0, IntercomDisplay.Instance);
+            foreach (var go in NetworkClient.prefabs.Values)
+            {
+                if (go.TryGetComponent(out PrimitiveObjectToy component))
+                {
+                    PrimitiveDisplay.PrimitiveObjectToy = component;
+                    break;
+                }
+            }
         }
     }
 }
