@@ -70,7 +70,7 @@
 
                 yield return Timing.WaitForSeconds(delay);
             }
-            display.Dispose();
+            display.Clear();
 
             if (audioNpc is { IsPlaying: true })
                 yield return Timing.WaitUntilFalse(() => audioNpc.IsPlaying);
@@ -117,7 +117,7 @@
                 display.SetText(text);
                 yield return Timing.WaitForSeconds(delay);
             }
-            display.Dispose();
+            display.Clear();
 
             if (audioNpc is { IsPlaying: true })
                 yield return Timing.WaitUntilFalse(() => audioNpc.IsPlaying);
