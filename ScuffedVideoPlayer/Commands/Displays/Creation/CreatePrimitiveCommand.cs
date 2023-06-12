@@ -20,15 +20,15 @@
             int height = 45;
             if (arguments.Count > 0)
             {
-                if (!int.TryParse(arguments.At(0), out width))
+                if (!int.TryParse(arguments.At(0), out width) || width < 1)
                 {
-                    response = "You must specify a valid width.";
+                    response = "You must specify a valid non 0 width.";
                     return false;
                 }
 
-                if (arguments.Count > 1 && !int.TryParse(arguments.At(1), out height))
+                if (arguments.Count > 1 && (!int.TryParse(arguments.At(1), out height) || height < 1))
                 {
-                    response = "You must specify a valid height.";
+                    response = "You must specify a valid non 0 height.";
                     return false;
                 }
             }

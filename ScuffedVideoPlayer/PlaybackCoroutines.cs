@@ -31,11 +31,7 @@
                 Log.Warning($"Playing track {Plugin.Videos.FirstOrDefault(x => x.Value == video).Key ?? "null"} without audio");
             }
 
-            IEnumerator<Color?[,]> primitivePlayback = null;
-            if (display is PrimitiveDisplay _)
-            {
-                primitivePlayback = PrimitivePlayback.Play(video);
-            }
+            Color?[,]? lastFrame = null;
             foreach (var frame in frames)
             {
                 if (display.Paused)
@@ -63,8 +59,9 @@
                 if (display is PrimitiveDisplay primitiveDisplay)
                 {
 #pragma warning disable CS8602
-                    primitivePlayback.MoveNext();
-                    primitiveDisplay.SetColor(primitivePlayback.Current!);
+                    var colorArr = PrimitivePlayback.ImageToColor(frame, lastFrame);
+                    lastFrame = colorArr;
+                    primitiveDisplay.SetColor(colorArr);
 #pragma warning restore CS8602
                 }
 

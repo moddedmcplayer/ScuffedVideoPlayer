@@ -9,35 +9,33 @@
     {
         public static IEnumerator<Color?[,]> Play(LoadedVideo video)
         {
-            Color[,] _lastFrame = null!;
+            Color?[,]? lastFrame = null;
             foreach (var frame in video.Frames)
             {
-                var newFrame = ImageToColor(frame);
-                var newPixels = new Color?[frame.Height, frame.Width]; 
-                for (int i = 0; i < frame.Height; i++)
-                {
-                    for (int y = 0; y < frame.Width; y++)
-                    {
-                        if (_lastFrame == null || _lastFrame[i, y] != newFrame[i, y])
-                        {
-                            newPixels[i, y] = newFrame[i, y];
-                        }
-                    }
-                }
-                _lastFrame = newFrame;
-                yield return newPixels;
+                var newFrame = ImageToColor(frame, lastFrame);
+                lastFrame = newFrame;
+                yield return newFrame;
             }
         }
 
-        public static Color[,] ImageToColor(Bitmap bitmap)
+        public static Color?[,] ImageToColor(Bitmap bitmap, Color?[,]? prevFrame = null)
         {
-            var frame = new Color[bitmap.Height, bitmap.Width];
+            var frame = new Color?[bitmap.Height, bitmap.Width];
             for (int i = 0; i < bitmap.Height; i++)
             {
                 for (int y = 0; y < bitmap.Width; y++)
                 {
                     var pixel = bitmap.GetPixel(y, i);
-                    frame[i, y] = new Color(pixel.R, pixel.G, pixel.B);
+                    // ReSharper disable PossibleLossOfFraction
+                    var pixelUnity = new Color(pixel.R / 255f, pixel.G / 255f, pixel.B / 255f, pixel == System.Drawing.Color.Transparent ? 0 : 1);
+                    // ReSharper restore PossibleLossOfFraction
+
+                    if (prevFrame != null && prevFrame[y, i] == pixelUnity)
+                    {
+                        frame[i, y] = null;
+                        continue;
+                    }
+                    frame[i, y] = pixelUnity;
                 }
             }
             return frame;

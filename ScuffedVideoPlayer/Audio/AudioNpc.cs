@@ -33,7 +33,7 @@
         public void Play(string file, VoiceChatChannel channel = VoiceChatChannel.Proximity, float volume = 100f)
         {
             Stop();
-            Hub.nicknameSync.MyNick = Path.GetFileNameWithoutExtension(file);
+            Hub.nicknameSync.MyNick = Path.GetFileNameWithoutExtension(Plugin.Videos.FirstOrDefault(x => x.Value?.AudioFile == file).Key ?? "null");
             AudioPlayerBase.Volume = volume;
             AudioPlayerBase.BroadcastChannel = channel;
             AudioPlayerBase.Enqueue(file, 0);
@@ -77,7 +77,9 @@
         public void Destroy()
         {
             _npcs.Remove(Hub);
-            NetworkServer.Destroy(Hub.gameObject);
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (Hub != null)
+                NetworkServer.Destroy(Hub.gameObject);
         }
 
         public static bool IsNpc(ReferenceHub hub)

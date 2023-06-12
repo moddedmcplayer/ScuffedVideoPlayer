@@ -36,14 +36,14 @@
             Resolution = new Tuple<int, int>(width, height);
             ParentGameObject = new GameObject($"PrimitiveDisplay_{Id}");
             List<List<PrimitiveObjectToy>> objects = new List<List<PrimitiveObjectToy>>();
-            var size = (float)(scale * 0.1);
-            var centerDelta = (float)(scale * 0.1 * width / 2);
-            for (int i = 0; i < height; i++)
+            var size = (float)(scale * 0.05);
+            var centerDelta = (float)(scale * 0.05 * width / 2);
+            for (int i = height; i > 0; i--)
             {
-                var ypos = (float)(i*0.1*scale);
+                var ypos = (float)(i*0.05*scale);
                 var list = new List<PrimitiveObjectToy>();
                 objects.Add(list);
-                for (int y = 0; y < width; y++)
+                for (int y = width; y > 0; y--)
                 {
                     var obj = Object.Instantiate(PrimitiveObjectToy.gameObject);
                     var comp = obj.GetComponent<PrimitiveObjectToy>();
@@ -51,7 +51,7 @@
                     comp.PrimitiveType = PrimitiveType.Cube;
                     var transform = comp.transform;
                     transform.localScale = new Vector3(size, size, size);
-                    transform.localPosition = new Vector3((float)(y*0.1*scale - centerDelta), ypos, 0);
+                    transform.localPosition = new Vector3((float)(y*0.05*scale - centerDelta), ypos, 0);
                     transform.SetParent(ParentGameObject.transform);
                     NetworkServer.Spawn(obj);
                     list.Add(comp);
@@ -69,7 +69,7 @@
                     var color = newPixels[row,col];
                     if (color == null)
                         continue;
-                    GameObjects[row][col].NetworkMaterialColor = color.Value; // plz fix
+                    GameObjects[row][col].NetworkMaterialColor = color.Value;
                 }
             }
         }
