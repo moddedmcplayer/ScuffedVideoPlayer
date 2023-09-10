@@ -18,16 +18,24 @@
         public static string ImageToText(Bitmap bitmap)
         {
             StringBuilder sb = new StringBuilder();
+            Color _lastColor = Color.White;
             for (int i = 0; i < bitmap.Height; i++)
             {
                 sb.Append("<size=33%><line-height=75%>");
                 for (int y = 0; y < bitmap.Width; y++)
                 {
                     var pixel = bitmap.GetPixel(y, i);
-                    sb.Append($"<color={ToHex(pixel)}>█</color>");
+                    if (pixel != _lastColor)
+                    {
+                        sb.Append($"<color={ToHex(pixel)}>");
+                        _lastColor = pixel;
+                    }
+                    sb.Append("█");
                 }
                 sb.Append("\n");
             }
+
+            sb.Append("</color>");
             return sb.ToString();
         }
 
