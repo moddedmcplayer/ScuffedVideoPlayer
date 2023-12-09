@@ -1,12 +1,13 @@
 ﻿namespace ScuffedVideoPlayer.Patches
 {
+    using CentralAuth;
     using HarmonyLib;
     using ScuffedVideoPlayer.Audio;
 
-    [HarmonyPatch(typeof(CharacterClassManager), nameof(CharacterClassManager.InstanceMode), MethodType.Setter)]
+    [HarmonyPatch(typeof(PlayerAuthenticationManager), nameof(PlayerAuthenticationManager.InstanceMode), MethodType.Setter)]
     public class InstanceModeSetterPatch
     {
-        public static bool Prefix(CharacterClassManager __instance)
+        public static bool Prefix(PlayerAuthenticationManager __instance)
             => !AudioNpc.IsNpc(__instance._hub);
     }
 }

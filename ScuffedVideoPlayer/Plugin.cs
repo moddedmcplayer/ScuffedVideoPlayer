@@ -48,7 +48,7 @@
         public static Plugin? Instance { get; private set; }
         private Harmony? _harmony;
 
-        [PluginEntryPoint("ScuffedVideoPlayer", "1.0.2", "scuffed video player", "moddedmcplayer")]
+        [PluginEntryPoint("ScuffedVideoPlayer", "1.0.3", "scuffed video player", "moddedmcplayer")]
         private void OnEnabled()
         {
             Instance = this;
